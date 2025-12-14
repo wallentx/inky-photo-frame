@@ -14,7 +14,7 @@
 
 ```bash
 # Connectez-vous en SSH à votre Raspberry Pi
-ssh pi@[ip-de-votre-pi]
+ssh <utilisateur>@[ip-de-votre-pi]
 
 # Téléchargez et lancez l'installateur
 curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/install.sh | bash
@@ -56,7 +56,7 @@ Après l'installation, l'écran affiche les instructions de connexion avec :
 5. Connexion :
    - **Nom d'utilisateur :** `inky`
    - **Mot de passe :** `inkyimpression73_2025`
-6. Ouvrez le dossier **InkyPhotos**
+6. Ouvrez le dossier **Images**
 7. **Glissez vos photos** depuis votre galerie
 
 **💡 La nouvelle photo s'affiche instantanément sur l'écran !**
@@ -136,8 +136,8 @@ sudo systemctl status inky-photo-frame
 
 ### Les photos ne s'affichent pas
 1. Vérifiez le format (JPG, PNG, HEIC)
-2. Vérifiez les logs : `tail -f /home/pi/inky_photo_frame.log`
-3. Vérifiez les permissions : `ls -la /home/pi/InkyPhotos`
+2. Vérifiez les logs : `tail -f "$HOME/inky_photo_frame.log"`
+3. Vérifiez les permissions : `ls -la "$HOME/Images"`
 
 ## 🗑 Désinstallation
 
@@ -149,11 +149,11 @@ cd inky-photo-frame
 
 ## 📝 Configuration Avancée
 
-Éditez `/home/pi/inky-photo-frame/inky_photo_frame.py` :
+Éditez `$HOME/inky-photo-frame/inky_photo_frame.py` :
 
 ```python
 CHANGE_HOUR = 5  # Heure de changement quotidien (0-23)
-PHOTOS_DIR = Path('/home/pi/InkyPhotos')  # Dossier des photos
+PHOTOS_DIR = Path.home() / "Images"  # Dossier des photos
 ```
 
 ## 🆘 Support

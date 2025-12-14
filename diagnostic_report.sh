@@ -3,7 +3,16 @@
 # Diagnostic Report for Inky Photo Frame
 # This script collects all relevant information about the current installation
 
-OUTPUT_FILE="/home/pi/inky_diagnostic_report_$(date +%Y%m%d_%H%M%S).txt"
+TARGET_USER="${SUDO_USER:-$USER}"
+HOME_DIR="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+if [ -z "$HOME_DIR" ]; then
+    HOME_DIR="/home/$TARGET_USER"
+fi
+
+PHOTOS_DIR="$HOME_DIR/Images"
+INSTALL_DIR="$HOME_DIR/inky-photo-frame"
+HISTORY_FILE="$HOME_DIR/.inky_history.json"
+OUTPUT_FILE="$HOME_DIR/inky_diagnostic_report_$(date +%Y%m%d_%H%M%S).txt"
 
 echo "=====================================" > $OUTPUT_FILE
 echo "INKY PHOTO FRAME - DIAGNOSTIC REPORT" >> $OUTPUT_FILE
@@ -42,11 +51,11 @@ echo "" >> $OUTPUT_FILE
 echo "4. DIRECTORY STRUCTURE" >> $OUTPUT_FILE
 echo "----------------------" >> $OUTPUT_FILE
 echo "Images Directory:" >> $OUTPUT_FILE
-ls -la /home/pi/Images/ >> $OUTPUT_FILE 2>&1
-echo "Total images: $(find /home/pi/Images -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.heic" \) 2>/dev/null | wc -l)" >> $OUTPUT_FILE
+ls -la "$PHOTOS_DIR/" >> $OUTPUT_FILE 2>&1
+echo "Total images: $(find "$PHOTOS_DIR" -type f \( -name \"*.jpg\" -o -name \"*.png\" -o -name \"*.heic\" \) 2>/dev/null | wc -l)" >> $OUTPUT_FILE
 echo "" >> $OUTPUT_FILE
 echo "Application Directory:" >> $OUTPUT_FILE
-ls -la /home/pi/inky-photo-frame/ >> $OUTPUT_FILE 2>&1
+ls -la "$INSTALL_DIR/" >> $OUTPUT_FILE 2>&1
 echo "" >> $OUTPUT_FILE
 
 echo "5. PYTHON ENVIRONMENT" >> $OUTPUT_FILE
@@ -55,7 +64,7 @@ echo "Python Version:" >> $OUTPUT_FILE
 python3 --version >> $OUTPUT_FILE 2>&1
 echo "" >> $OUTPUT_FILE
 echo "Virtual Environment Packages:" >> $OUTPUT_FILE
-/home/pi/.virtualenvs/pimoroni/bin/pip list >> $OUTPUT_FILE 2>&1
+"$INSTALL_DIR/.venv/bin/pip" list >> $OUTPUT_FILE 2>&1
 echo "" >> $OUTPUT_FILE
 
 echo "6. SMB/SAMBA CONFIGURATION" >> $OUTPUT_FILE
@@ -78,9 +87,9 @@ echo "" >> $OUTPUT_FILE
 
 echo "8. HISTORY FILE" >> $OUTPUT_FILE
 echo "---------------" >> $OUTPUT_FILE
-if [ -f /home/pi/.inky_history.json ]; then
+if [ -f "$HISTORY_FILE" ]; then
     echo "History file exists:" >> $OUTPUT_FILE
-    cat /home/pi/.inky_history.json >> $OUTPUT_FILE 2>&1
+    cat "$HISTORY_FILE" >> $OUTPUT_FILE 2>&1
 else
     echo "No history file found" >> $OUTPUT_FILE
 fi
@@ -128,4 +137,4 @@ echo ""
 echo "File size: $(ls -lh $OUTPUT_FILE | awk '{print $5}')"
 echo ""
 echo "You can copy this file before reformatting with:"
-echo "scp pi@$(hostname -I | cut -d' ' -f1):$OUTPUT_FILE ."
+echo "scp $TARGET_USER@$(hostname -I | cut -d' ' -f1):$OUTPUT_FILE ."

@@ -19,9 +19,16 @@ USER_NAME="inky"
 # Generate a random 10-character password (alphanumeric only for compatibility)
 USER_PASSWORD=$(< /dev/urandom tr -dc 'A-Za-z0-9' | head -c 10)
 SMB_SHARE_NAME="Images"
-PHOTOS_DIR="/home/pi/Images"
-INSTALL_DIR="/home/pi/inky-photo-frame"
-PASSWORD_FILE="/home/pi/.inky_credentials"
+TARGET_USER="${SUDO_USER:-$USER}"
+TARGET_GROUP="$(id -gn "$TARGET_USER" 2>/dev/null || echo "$TARGET_USER")"
+HOME_DIR="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+if [ -z "$HOME_DIR" ]; then
+    HOME_DIR="/home/$TARGET_USER"
+fi
+
+PHOTOS_DIR="$HOME_DIR/Images"
+INSTALL_DIR="$HOME_DIR/inky-photo-frame"
+PASSWORD_FILE="$HOME_DIR/.inky_credentials"
 
 # Colors for output
 RED='\033[0;31m'
@@ -134,30 +141,16 @@ sudo apt-get install -y python3-pip python3-venv samba samba-common-bin git host
 
 # STEP 5: Create photos directory
 print_info "STEP 5: Creating photos directory..."
-mkdir -p $PHOTOS_DIR
-sudo chown pi:pi $PHOTOS_DIR
-chmod 755 $PHOTOS_DIR
+sudo mkdir -p "$PHOTOS_DIR"
+sudo chown "$TARGET_USER:$TARGET_GROUP" "$PHOTOS_DIR"
+sudo chmod 755 "$PHOTOS_DIR"
 
-# STEP 6: Setup Python virtual environment
-print_info "STEP 6: Setting up Python virtual environment..."
-python3 -m venv ~/.virtualenvs/pimoroni
-source ~/.virtualenvs/pimoroni/bin/activate
+# STEP 6: Prepare application files
+print_info "STEP 6: Preparing application files..."
+sudo mkdir -p "$INSTALL_DIR"
+sudo chown -R "$TARGET_USER:$TARGET_GROUP" "$INSTALL_DIR"
 
-# STEP 7: Install Inky library
-print_info "STEP 7: Installing Inky library..."
-pip install --upgrade pip
-pip install inky[rpi,example-depends]
-
-# STEP 8: Install additional Python packages
-print_info "STEP 8: Installing Python dependencies..."
-pip install pillow pillow-heif watchdog lgpio RPi.GPIO gpiozero
-
-# STEP 9: Create installation directory
-print_info "STEP 9: Creating application directory..."
-mkdir -p $INSTALL_DIR
-
-# STEP 10: Download application files from GitHub
-print_info "STEP 10: Downloading application files from GitHub..."
+print_info "Downloading application files from GitHub..."
 
 # List of files to download
 FILES_TO_DOWNLOAD=(
@@ -165,20 +158,44 @@ FILES_TO_DOWNLOAD=(
     "update.sh"
     "inky-photo-frame-cli"
     "logrotate.conf"
+    "pyproject.toml"
 )
 
 # Always download from GitHub for consistency
 for file in "${FILES_TO_DOWNLOAD[@]}"; do
     print_info "Downloading $file..."
-    curl -sSL -o $INSTALL_DIR/$file https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/$file
+    curl -sSL -o "$INSTALL_DIR/$file" "https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/$file"
     if [ $? -ne 0 ]; then
         print_error "Failed to download $file"
         exit 1
     fi
-    chmod +x $INSTALL_DIR/$file
+    chmod +x "$INSTALL_DIR/$file"
 done
 
 print_status "Application files downloaded successfully"
+
+# STEP 7: Setup Python virtual environment with uv
+print_info "STEP 7: Setting up Python virtual environment with uv..."
+
+# Install uv if not present
+if ! command -v uv &> /dev/null; then
+    print_info "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    source $HOME/.cargo/env
+else
+    print_info "uv already installed"
+fi
+
+# Create venv in the install directory
+cd $INSTALL_DIR
+print_info "Creating virtual environment..."
+uv venv .venv
+source .venv/bin/activate
+
+# STEP 8: Install dependencies
+print_info "STEP 8: Installing project dependencies..."
+uv pip install .
+print_status "Dependencies installed successfully"
 
 # STEP 11: Configure Samba
 print_info "STEP 11: Configuring SMB file sharing..."
@@ -196,10 +213,10 @@ sudo tee -a /etc/samba/smb.conf > /dev/null << EOF
    read only = no
    create mask = 0755
    directory mask = 0755
-   valid users = $USER_NAME, pi
-   write list = $USER_NAME, pi
-   force user = pi
-   force group = pi
+   valid users = $USER_NAME, $TARGET_USER
+   write list = $USER_NAME, $TARGET_USER
+   force user = $TARGET_USER
+   force group = $TARGET_GROUP
 
    # iOS compatibility settings
    vfs objects = fruit streams_xattr
@@ -225,9 +242,9 @@ fi
 echo -e "$USER_PASSWORD\n$USER_PASSWORD" | sudo smbpasswd -a $USER_NAME -s
 sudo smbpasswd -e $USER_NAME
 
-# Also set pi user for SMB
-echo -e "$USER_PASSWORD\n$USER_PASSWORD" | sudo smbpasswd -a pi -s
-sudo smbpasswd -e pi
+# Also set target user for SMB
+echo -e "$USER_PASSWORD\n$USER_PASSWORD" | sudo smbpasswd -a "$TARGET_USER" -s
+sudo smbpasswd -e "$TARGET_USER"
 
 # Save credentials to file for display on Inky screen
 print_info "Saving credentials..."
@@ -250,10 +267,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=pi
+User=$TARGET_USER
 WorkingDirectory=$INSTALL_DIR
-Environment="PATH=/home/pi/.virtualenvs/pimoroni/bin:/usr/bin:/bin"
-ExecStart=/home/pi/.virtualenvs/pimoroni/bin/python $INSTALL_DIR/inky_photo_frame.py
+Environment="PATH=$INSTALL_DIR/.venv/bin:/usr/bin:/bin"
+ExecStart=$INSTALL_DIR/.venv/bin/python $INSTALL_DIR/inky_photo_frame.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -265,7 +282,11 @@ EOF
 
 # STEP 14: Install logrotate configuration
 print_info "STEP 14: Installing log rotation..."
-sudo cp $INSTALL_DIR/logrotate.conf /etc/logrotate.d/inky-photo-frame
+sudo sed \
+    -e "s|__LOG_FILE__|$HOME_DIR/inky_photo_frame.log|g" \
+    -e "s|__USER__|$TARGET_USER|g" \
+    -e "s|__GROUP__|$TARGET_GROUP|g" \
+    "$INSTALL_DIR/logrotate.conf" | sudo tee /etc/logrotate.d/inky-photo-frame > /dev/null
 sudo chown root:root /etc/logrotate.d/inky-photo-frame
 sudo chmod 644 /etc/logrotate.d/inky-photo-frame
 print_status "Log rotation configured (7 days retention)"
@@ -343,8 +364,8 @@ sudo systemctl stop inky-photo-frame
 
 - Photos: $PHOTOS_DIR
 - Application: $INSTALL_DIR
-- Logs: /home/pi/inky_photo_frame.log
-- History: /home/pi/.inky_history.json
+- Logs: $HOME_DIR/inky_photo_frame.log
+- History: $HOME_DIR/.inky_history.json
 EOF
 
 # Final status check only if services were started

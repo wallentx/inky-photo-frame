@@ -116,7 +116,7 @@ When first powered on, the display shows:
 - 🔐 Login credentials (username: `inky` / password: randomly generated 10-char alphanumeric)
 - 📝 Step-by-step instructions
 
-**Security Note:** A unique random password is generated during installation and displayed on the screen. The password is stored in `/home/pi/.inky_credentials` for persistence across reboots.
+**Security Note:** A unique random password is generated during installation and displayed on the screen. The password is stored in `$HOME/.inky_credentials` for persistence across reboots.
 
 ### Smart Photo Management
 ```mermaid
@@ -202,18 +202,18 @@ The Pi will automatically connect to the new WiFi network on boot!
 ## 🛠️ Advanced Configuration
 
 ### Change Photo Rotation Time
-Edit `/home/pi/inky-photo-frame/inky_photo_frame.py`:
+Edit `$HOME/inky-photo-frame/inky_photo_frame.py`:
 
 ```python
 CHANGE_HOUR = 5  # Change daily at this hour (24h format)
-PHOTOS_DIR = Path('/home/pi/Images')  # Photo storage location
+PHOTOS_DIR = Path.home() / "Images"  # Photo storage location
 ```
 
 ### 🎨 Color Modes
 
 **Choose the best color rendering for your photos!**
 
-Edit `/home/pi/inky-photo-frame/inky_photo_frame.py` and change `COLOR_MODE` (line 44):
+Edit `$HOME/inky-photo-frame/inky_photo_frame.py` and change `COLOR_MODE` (line 44):
 
 #### **Mode 1: `spectra_palette`** ⭐ RECOMMENDED for Spectra 6
 ```python
@@ -245,7 +245,7 @@ COLOR_MODE = 'pimoroni'
 **How to apply:**
 ```bash
 # 1. Edit the file
-nano /home/pi/inky-photo-frame/inky_photo_frame.py
+nano "$HOME/inky-photo-frame/inky_photo_frame.py"
 
 # 2. Change COLOR_MODE on line 44
 
@@ -281,7 +281,7 @@ sudo journalctl -u inky-photo-frame -f
 sudo systemctl restart inky-photo-frame
 
 # Manual test
-python3 /home/pi/inky-photo-frame/inky_photo_frame.py
+"$HOME/inky-photo-frame/.venv/bin/python" "$HOME/inky-photo-frame/inky_photo_frame.py"
 ```
 
 ## 🤝 Contributing
