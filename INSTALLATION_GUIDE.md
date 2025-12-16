@@ -6,7 +6,6 @@
 - **Carte SD** (8GB minimum) avec Raspberry Pi OS installé
 - **Écran Inky Impression 7.3"** (800x480 pixels)
 - **Connexion WiFi** configurée sur le Pi
-- **Smartphone** (iPhone, Android, etc.) pour uploader les photos
 
 ## 🚀 Installation Rapide (5 minutes)
 
@@ -34,32 +33,17 @@ chmod +x install.sh
 
 L'installation va :
 - ✅ Installer toutes les dépendances
-- ✅ Configurer le partage SMB
-- ✅ Créer l'utilisateur `inky` avec mot de passe `inkyimpression73_2025`
 - ✅ Démarrer automatiquement au boot
 
-## 📱 Configuration depuis votre téléphone
+## 📸 Synchronisation des photos
 
-### 1. Premier démarrage
-Après l'installation, l'écran affiche les instructions de connexion avec :
-- L'adresse IP du Raspberry Pi
-- Les identifiants de connexion
-- Les étapes pour ajouter des photos
+Après l'installation, synchronisez/copiez vos photos dans :
 
-### 2. Ajouter des photos
+- `$HOME/Images`
 
-#### Depuis iPhone/iPad :
-1. Ouvrez l'app **Fichiers** (Files)
-2. Appuyez sur les **3 points** (...) en haut
-3. Sélectionnez **Se connecter au serveur**
-4. Entrez : `smb://[IP-du-raspberry]` (affiché sur l'écran)
-5. Connexion :
-   - **Nom d'utilisateur :** `inky`
-   - **Mot de passe :** `inkyimpression73_2025`
-6. Ouvrez le dossier **Images**
-7. **Glissez vos photos** depuis votre galerie
+Les nouvelles photos sont détectées automatiquement et s'affichent sans redémarrer le service.
 
-**💡 La nouvelle photo s'affiche instantanément sur l'écran !**
+Au premier démarrage, l'écran affiche l'adresse IP et le dossier des photos.
 
 ## 🎨 Fonctionnement
 
@@ -100,7 +84,7 @@ L'Inky Impression dispose de **4 boutons physiques** sur le côté pour un contr
 - ✅ Aucun message affiché - actions silencieuses
 - ✅ Boutons verrouillés pendant l'affichage (~30-40s)
 - ✅ Préférence de couleur sauvegardée et persistante
-- ✅ Navigation sans smartphone
+- ✅ Navigation sans interface externe
 
 ## 🛠 Commandes Utiles
 
@@ -128,11 +112,6 @@ sudo systemctl status inky-photo-frame
 # Vérifiez les connexions de l'écran
 # Pin 1 (3.3V), Pin 6 (GND), pins SPI activés
 ```
-
-### Impossible de se connecter en SMB
-1. Vérifiez que le Pi et l'iPhone sont sur le même réseau WiFi
-2. Vérifiez l'IP : `hostname -I`
-3. Redémarrez SMB : `sudo systemctl restart smbd`
 
 ### Les photos ne s'affichent pas
 1. Vérifiez le format (JPG, PNG, HEIC)

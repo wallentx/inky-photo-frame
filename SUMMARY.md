@@ -71,7 +71,7 @@ inky-photo-frame info
 # - Status du service
 # - Nombre de photos
 # - Espace disque
-# - Adresse IP/SMB
+# - Adresse IP
 ```
 
 ---

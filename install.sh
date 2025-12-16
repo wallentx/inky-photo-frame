@@ -15,10 +15,6 @@ echo "   These are REQUIRED for the Inky display to work properly"
 echo ""
 
 # Variables
-USER_NAME="inky"
-# Generate a random 10-character password (alphanumeric only for compatibility)
-USER_PASSWORD=$(< /dev/urandom tr -dc 'A-Za-z0-9' | head -c 10)
-SMB_SHARE_NAME="Images"
 TARGET_USER="${SUDO_USER:-$USER}"
 TARGET_GROUP="$(id -gn "$TARGET_USER" 2>/dev/null || echo "$TARGET_USER")"
 HOME_DIR="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
@@ -28,7 +24,6 @@ fi
 
 PHOTOS_DIR="$HOME_DIR/Images"
 INSTALL_DIR="$HOME_DIR/inky-photo-frame"
-PASSWORD_FILE="$HOME_DIR/.inky_credentials"
 
 # Colors for output
 RED='\033[0;31m'
@@ -137,7 +132,7 @@ sudo apt-get update
 
 # STEP 4: Install required system packages
 print_info "STEP 4: Installing required packages..."
-sudo apt-get install -y python3-pip python3-venv samba samba-common-bin git hostapd dnsmasq fonts-dejavu fonts-dejavu-core swig python3-dev liblgpio-dev
+sudo apt-get install -y python3-pip python3-venv git hostapd dnsmasq fonts-dejavu fonts-dejavu-core swig python3-dev liblgpio-dev
 
 # STEP 5: Create photos directory
 print_info "STEP 5: Creating photos directory..."
@@ -196,67 +191,6 @@ source .venv/bin/activate
 print_info "STEP 8: Installing project dependencies..."
 uv pip install .
 print_status "Dependencies installed successfully"
-
-# STEP 11: Configure Samba
-print_info "STEP 11: Configuring SMB file sharing..."
-
-# Backup existing smb.conf
-sudo cp /etc/samba/smb.conf /etc/samba/smb.conf.backup
-
-# Add SMB share configuration
-sudo tee -a /etc/samba/smb.conf > /dev/null << EOF
-
-[$SMB_SHARE_NAME]
-   comment = Photo Frame Images
-   path = $PHOTOS_DIR
-   browseable = yes
-   read only = no
-   create mask = 0755
-   directory mask = 0755
-   valid users = $USER_NAME, $TARGET_USER
-   write list = $USER_NAME, $TARGET_USER
-   force user = $TARGET_USER
-   force group = $TARGET_GROUP
-
-   # iOS compatibility settings
-   vfs objects = fruit streams_xattr
-   fruit:metadata = stream
-   fruit:model = MacSamba
-   fruit:veto_appledouble = no
-   fruit:posix_rename = yes
-   fruit:zero_file_id = yes
-   fruit:wipe_intentionally_left_blank_rfork = yes
-   fruit:delete_empty_adfiles = yes
-EOF
-
-# STEP 12: Create SMB user
-print_info "STEP 12: Creating SMB user '$USER_NAME'..."
-# Check if user exists
-if id "$USER_NAME" &>/dev/null; then
-    print_info "User $USER_NAME already exists"
-else
-    sudo useradd -m $USER_NAME
-fi
-
-# Set SMB password
-echo -e "$USER_PASSWORD\n$USER_PASSWORD" | sudo smbpasswd -a $USER_NAME -s
-sudo smbpasswd -e $USER_NAME
-
-# Also set target user for SMB
-echo -e "$USER_PASSWORD\n$USER_PASSWORD" | sudo smbpasswd -a "$TARGET_USER" -s
-sudo smbpasswd -e "$TARGET_USER"
-
-# Save credentials to file for display on Inky screen
-print_info "Saving credentials..."
-echo "$USER_NAME" | sudo tee "$PASSWORD_FILE" > /dev/null
-echo "$USER_PASSWORD" | sudo tee -a "$PASSWORD_FILE" > /dev/null
-sudo chmod 644 "$PASSWORD_FILE"
-print_status "Credentials saved to $PASSWORD_FILE"
-
-# Restart Samba
-print_info "Restarting SMB service..."
-sudo systemctl restart smbd
-sudo systemctl enable smbd
 
 # STEP 13: Create systemd service
 print_info "STEP 13: Creating system service for automatic startup..."
@@ -317,24 +251,13 @@ IP_ADDRESS=$(hostname -I | cut -d' ' -f1)
 cat > $INSTALL_DIR/README.md << EOF
 # Inky Photo Frame
 
-## 📱 How to Add Photos from Your Phone
+## 📸 Adding Photos
 
-### iPhone/iPad
-1. Open the **Files** app
-2. Tap **Connect to Server**
-3. Enter: \`smb://$IP_ADDRESS\`
-4. Use these credentials:
-   - **Username:** $USER_NAME
-   - **Password:** $USER_PASSWORD
-5. Open the **Images** folder
-6. Upload your photos (JPG, PNG, HEIC supported)
+Sync or copy photos into:
 
-### Android
-1. Use a file explorer app (CX File Explorer, Solid Explorer)
-2. Connect to: \`smb://$IP_ADDRESS\`
-3. Enter the same credentials as above
-4. Navigate to **Images** folder
-5. Upload your photos
+- $PHOTOS_DIR
+
+New photos will be detected and displayed automatically.
 
 ## ✨ Features
 
@@ -380,14 +303,9 @@ echo "╔═══════════════════════�
 echo "║     ✅ Installation completed successfully!            ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
-echo "📱 HOW TO CONNECT FROM YOUR PHONE:"
-echo "   iPhone/iPad: Open Files app"
-echo "   Android: Use a file explorer (CX File Explorer, Solid Explorer)"
-echo ""
-echo "   For all devices:"
-echo "   1. Connect to: smb://$IP_ADDRESS"
-echo "   2. Username: $USER_NAME"
-echo "   3. Password: $USER_PASSWORD"
+echo "📸 PHOTO DIRECTORY:"
+echo "   $PHOTOS_DIR"
+echo "   Sync/copy images here to update the display."
 echo ""
 if [ "$REBOOT_REQUIRED" = true ]; then
     echo "📷 After reboot, the welcome screen will appear on your Inky display"
@@ -417,7 +335,7 @@ if [ "$REBOOT_REQUIRED" = true ]; then
     echo ""
     echo "After reboot:"
     echo "1. The welcome screen will appear on your Inky display"
-    echo "2. You can connect from your phone to add photos"
+    echo "2. Sync/copy photos into: $PHOTOS_DIR"
     echo ""
     echo "Please reboot now:"
     echo ""

@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-This is a digital photo frame application for Raspberry Pi with Inky Impression e-ink displays. It displays photos from a network share with smart rotation and supports multiple display models through automatic detection.
+This is a digital photo frame application for Raspberry Pi with Inky Impression e-ink displays. It displays photos from a local photos directory with smart rotation and supports multiple display models through automatic detection.
 
 **Key Features:**
 - Auto-detects Inky display models (7.3" and 13.3", various editions)
-- Displays photos from SMB/network share with immediate updates
+- Displays photos from a local directory with immediate updates
 - Daily photo rotation at 5AM with intelligent history tracking
 - Physical button controls for navigation and color mode switching
 - Multiple color modes optimized for different e-ink displays
@@ -24,7 +24,7 @@ This is a digital photo frame application for Raspberry Pi with Inky Impression 
   - `watchdog` - File system monitoring for instant photo updates
   - `gpiozero`, `RPi.GPIO`, `lgpio` - Physical button support
 - **Services:** systemd service (`inky-photo-frame.service`) for auto-start
-- **Network:** Samba (SMB) for photo uploads from phones/computers
+- **Sync:** External sync tools can write into the photos directory (e.g. Google Photos cron job, rsync, scp)
 
 ## Project Structure
 
@@ -79,8 +79,8 @@ The application is organized into these key sections:
 
 ### Installation Scripts
 
-- **install.sh**: Enables I2C/SPI, installs dependencies, configures Samba, creates systemd service, disables LEDs
-- **uninstall.sh**: Removes service, files, and optionally the Samba user
+- **install.sh**: Enables I2C/SPI, installs dependencies, creates systemd service, disables LEDs
+- **uninstall.sh**: Removes service and installed files
 - **update.sh**: Git-based updater with service restart
 
 ## Development Guidelines
@@ -167,15 +167,11 @@ The application uses JSON files in `$HOME/`:
 
 - `.inky_history.json` - Tracks displayed photos (prevents repeats)
 - `.inky_color_mode.json` - Stores user's color mode preference
-- `.inky_credentials` - SMB password (generated during install)
 - `inky_photo_frame.log` - Application logs (with rotation)
 
 ### Security Considerations
 
-- **Password generation**: Use secure random passwords (install.sh)
 - **File permissions**: Ensure proper ownership (service user)
-- **Network access**: SMB share is password-protected
-- **Credential storage**: Store passwords in protected files (600 permissions)
 
 ## Common Modification Patterns
 
@@ -213,7 +209,7 @@ The application uses JSON files in `$HOME/`:
 - Pin major versions in `requirements.txt` (e.g., `>=1.5.0`)
 - Test compatibility with Raspberry Pi OS Bookworm (current)
 - Support both legacy and modern GPIO libraries
-- Document any system-level dependencies (I2C, SPI, Samba)
+- Document any system-level dependencies (I2C, SPI)
 
 ## Documentation Standards
 
@@ -239,7 +235,7 @@ Common issues developers should be aware of:
 
 - **"No Inky display detected"** → Check I2C/SPI enabled, physical connection
 - **Buttons not working** → GPIO library conflicts, check imports
-- **Photos not appearing** → Check Samba permissions, file format support
+- **Photos not appearing** → Check the photos directory permissions and file format support
 - **Slow performance** → Image too large, optimize before processing
 - **Color looks wrong** → Try different COLOR_MODE settings
 - **Service won't start** → Check logs, Python dependencies, file permissions

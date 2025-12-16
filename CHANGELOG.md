@@ -374,7 +374,7 @@ Service: Running ✓
 Photos: 245
 Disk Usage: 23%
 IP Address: 192.168.1.42
-SMB Share: smb://192.168.1.42
+Photos Directory: $HOME/Images
 ```
 
 ---

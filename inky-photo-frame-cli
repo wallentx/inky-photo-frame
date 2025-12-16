@@ -89,7 +89,7 @@ show_info() {
     # IP Address
     IP_ADDR=$(hostname -I | cut -d' ' -f1)
     echo "IP Address: $IP_ADDR"
-    echo "SMB Share: smb://$IP_ADDR"
+    echo "Photos Directory: $PHOTOS_DIR"
 
     echo ""
 }

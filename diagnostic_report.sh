@@ -67,25 +67,13 @@ echo "Virtual Environment Packages:" >> $OUTPUT_FILE
 "$INSTALL_DIR/.venv/bin/pip" list >> $OUTPUT_FILE 2>&1
 echo "" >> $OUTPUT_FILE
 
-echo "6. SMB/SAMBA CONFIGURATION" >> $OUTPUT_FILE
-echo "--------------------------" >> $OUTPUT_FILE
-echo "SMB Status:" >> $OUTPUT_FILE
-systemctl status smbd --no-pager | head -10 >> $OUTPUT_FILE 2>&1
-echo "" >> $OUTPUT_FILE
-echo "SMB Shares:" >> $OUTPUT_FILE
-smbstatus -S >> $OUTPUT_FILE 2>&1
-echo "" >> $OUTPUT_FILE
-echo "SMB Users:" >> $OUTPUT_FILE
-pdbedit -L >> $OUTPUT_FILE 2>&1
-echo "" >> $OUTPUT_FILE
-
-echo "7. RECENT LOGS (Last 50 lines)" >> $OUTPUT_FILE
+echo "6. RECENT LOGS (Last 50 lines)" >> $OUTPUT_FILE
 echo "-------------------------------" >> $OUTPUT_FILE
 echo "Service Logs:" >> $OUTPUT_FILE
 journalctl -u inky-photo-frame -n 50 --no-pager >> $OUTPUT_FILE 2>&1
 echo "" >> $OUTPUT_FILE
 
-echo "8. HISTORY FILE" >> $OUTPUT_FILE
+echo "7. HISTORY FILE" >> $OUTPUT_FILE
 echo "---------------" >> $OUTPUT_FILE
 if [ -f "$HISTORY_FILE" ]; then
     echo "History file exists:" >> $OUTPUT_FILE
@@ -102,11 +90,6 @@ RESOLVED ISSUES:
 1. GPIO Conflict (GPIO8/Chip Select):
    - Added dtoverlay=spi0-1cs,cs0_pin=7 to /boot/config.txt
    - Fixed "pins we need are in use" error
-
-2. SMB Permissions:
-   - Changed from InkyPhotos to Images folder
-   - Fixed write permissions (was read-only)
-   - Removed duplicate "homes" share
 
 3. File Watcher Stopping After First Image:
    - Fixed "Cannot send after transport endpoint shutdown" error

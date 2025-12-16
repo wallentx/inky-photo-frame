@@ -47,28 +47,12 @@ sudo systemctl disable inky-photo-frame
 sudo rm /etc/systemd/system/inky-photo-frame.service
 sudo systemctl daemon-reload
 
-# Remove SMB share
-print_info "Suppression du partage SMB..."
-sudo cp /etc/samba/smb.conf /etc/samba/smb.conf.uninstall-backup
-sudo sed -i '/\[Images\]/,/^$/d' /etc/samba/smb.conf
-sudo systemctl restart smbd
-
 # Remove application files
 print_info "Suppression des fichiers de l'application..."
 rm -rf "$INSTALL_DIR"
 
 # Keep photos and history
 print_info "Conservation des photos et de l'historique..."
-
-# Optional: Remove user
-echo ""
-read -p "Voulez-vous supprimer l'utilisateur 'inky'? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    sudo smbpasswd -x inky
-    sudo userdel inky
-    print_status "Utilisateur inky supprimé"
-fi
 
 # Optional: Remove photos
 echo ""

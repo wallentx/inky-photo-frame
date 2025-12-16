@@ -12,7 +12,7 @@
 [![Display 7.3"](https://img.shields.io/badge/display-Inky%207.3%22-purple)](https://shop.pimoroni.com/products/inky-impression-7-3)
 [![Display 13.3"](https://img.shields.io/badge/display-Inky%2013.3%22-purple)](https://shop.pimoroni.com/products/inky-impression-7-3?variant=55186435277179)
 
-[**📥 Quick Install**](#-quick-installation) • [**📱 Phone Setup**](#-upload-photos-from-your-phone) • [**🔧 WiFi Config**](#-wifi-configuration) • [**📖 Full Guide**](INSTALLATION_GUIDE.md)
+[**📥 Quick Install**](#-quick-installation) • [**📸 Photo Sync**](#-photo-sync) • [**🔧 WiFi Config**](#-wifi-configuration) • [**📖 Full Guide**](INSTALLATION_GUIDE.md)
 
 </div>
 
@@ -51,7 +51,7 @@ The software uses the official [Pimoroni Inky library](https://github.com/pimoro
 | 📲 **Instant Display** | New photos appear immediately when added |
 | 🔄 **Smart Rotation** | Daily change at 5AM with intelligent history |
 | 🎨 **Color Modes** | 3 color profiles: calibrated palette, warm boost, or default |
-| 📱 **Universal** | Works with iPhone, Android, any smartphone |
+| 🔁 **Any Sync Method** | Works with Google Photos sync, rsync/scp, USB, etc. |
 | 🖼️ **HEIC Support** | Native support for modern phone formats |
 | ✂️ **Smart Cropping** | Automatic optimization for e-ink |
 | 🎮 **Physical Buttons** | 4 buttons for navigation and color control |
@@ -83,7 +83,6 @@ curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/inst
 That's it! The installer handles everything:
 - ✅ Enables I2C and SPI (required for display)
 - ✅ Dependencies
-- ✅ SMB file sharing
 - ✅ Auto-start on boot
 - ✅ Disables all Raspberry Pi LEDs (no light pollution)
 
@@ -92,31 +91,21 @@ That's it! The installer handles everything:
 inky-photo-frame update
 ```
 
-## 📱 Upload Photos from Your Phone
+## 📸 Photo Sync
 
-### iPhone / iPad
-1. Open **Files** app
-2. Tap **Connect to Server**
-3. Enter: `smb://[your-pi-ip]`
-4. Login: `inky` / `[generated password shown on screen]`
-5. Drop photos in **Images**
+Sync or copy images into the photo directory and the frame will automatically pick them up:
 
-### Android
-1. Install **CX File Explorer** or **Solid Explorer**
-2. Add network location (SMB)
-3. Enter: `smb://[your-pi-ip]`
-4. Login: `inky` / `[generated password shown on screen]`
-5. Upload to **Images**
+- `$HOME/Images`
+
+Your Google Photos cron/sync script should write into that directory (for the service user).
 
 ## 🎯 How It Works
 
 ### Welcome Screen
 When first powered on, the display shows:
 - 📍 Your Raspberry Pi IP address
-- 🔐 Login credentials (username: `inky` / password: randomly generated 10-char alphanumeric)
-- 📝 Step-by-step instructions
-
-**Security Note:** A unique random password is generated during installation and displayed on the screen. The password is stored in `$HOME/.inky_credentials` for persistence across reboots.
+- 📁 The configured photos directory
+- 📝 Simple sync instructions
 
 ### Smart Photo Management
 ```mermaid
@@ -130,27 +119,13 @@ graph LR
 
 ## 📶 WiFi Configuration
 
-### How to change WiFi network:
-1. **Power off** the Raspberry Pi
-2. **Remove the SD card** and insert it into your computer
-3. **Open the boot partition** (accessible on Windows/Mac/Linux)
-4. **Edit** the file `wpa_supplicant.conf` (create it if it doesn't exist)
-5. **Add your WiFi credentials**:
-   ```
-   country=US
-   ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-   update_config=1
+### Recommended (Raspberry Pi OS Bookworm and newer)
+- Use **Raspberry Pi Imager** → **Advanced Options** to set WiFi + user before first boot.
+- If the Pi is already booted, change WiFi on-device with `sudo raspi-config` or `nmtui`.
 
-   network={
-       ssid="YourWiFiName"
-       psk="YourWiFiPassword"
-       key_mgmt=WPA-PSK
-   }
-   ```
-6. **Save** the file, **eject** the SD card safely
-7. **Re-insert** the SD card into the Pi and **power on**
-
-The Pi will automatically connect to the new WiFi network on boot!
+### Notes on `wpa_supplicant.conf` and `network-config`
+- `wpa_supplicant.conf` on the boot partition is not the default mechanism on newer Raspberry Pi OS images.
+- Some images that use cloud-init may support a `network-config` file on the boot partition (often first-boot only).
 
 ## 📦 What You Need
 
@@ -161,7 +136,7 @@ The Pi will automatically connect to the new WiFi network on boot!
 - **🥧 Raspberry Pi** - Zero 2W, 3, 4, or 5
 - **🔌 Power Supply** - 5V USB power
 - **💾 SD Card** - 8GB+ recommended
-- **📶 WiFi Network** - For photo uploads
+- **📶 WiFi Network** - Optional (for syncing and updates)
 
 ## 🌟 Perfect For
 
