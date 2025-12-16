@@ -6,7 +6,7 @@
 
 **Transform your Inky Impression into a stunning digital photo frame**
 
-[![GitHub](https://img.shields.io/github/stars/mehdi7129/inky-photo-frame?style=social)](https://github.com/mehdi7129/inky-photo-frame)
+[![GitHub](https://img.shields.io/github/stars/wallentx/inky-photo-frame?style=social)](https://github.com/wallentx/inky-photo-frame)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red)](https://www.raspberrypi.org/)
 [![Display 7.3"](https://img.shields.io/badge/display-Inky%207.3%22-purple)](https://shop.pimoroni.com/products/inky-impression-7-3)
@@ -77,7 +77,7 @@ The Inky Impression has 4 physical buttons on the side for interactive control:
 
 ### One-Line Install
 ```bash
-curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/wallentx/inky-photo-frame/main/install.sh | bash
 ```
 
 That's it! The installer handles everything:

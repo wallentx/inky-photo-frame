@@ -14,7 +14,12 @@ fi
 
 INSTALL_DIR="$HOME_DIR/inky-photo-frame"
 BACKUP_DIR="$HOME_DIR/.inky-backups"
-GITHUB_RAW="https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main"
+
+# GitHub source (override via env vars when running the updater)
+GITHUB_USER="${GITHUB_USER:-wallentx}"
+GITHUB_REPO="${GITHUB_REPO:-inky-photo-frame}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
+GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH"
 
 # Colors
 GREEN='\033[0;32m'
@@ -43,7 +48,7 @@ echo ""
 if [ ! -d "$INSTALL_DIR" ]; then
     print_error "Installation directory not found: $INSTALL_DIR"
     echo "Please run the installer first:"
-    echo "  curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/install.sh | bash"
+    echo "  curl -sSL $GITHUB_RAW/install.sh | bash"
     exit 1
 fi
 

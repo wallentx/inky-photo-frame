@@ -25,6 +25,12 @@ fi
 PHOTOS_DIR="$HOME_DIR/Images"
 INSTALL_DIR="$HOME_DIR/inky-photo-frame"
 
+# GitHub source (override via env vars when running the installer)
+GITHUB_USER="${GITHUB_USER:-wallentx}"
+GITHUB_REPO="${GITHUB_REPO:-inky-photo-frame}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
+GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -156,14 +162,14 @@ FILES_TO_DOWNLOAD=(
     "pyproject.toml"
 )
 
-# Always download from GitHub for consistency
-for file in "${FILES_TO_DOWNLOAD[@]}"; do
-    print_info "Downloading $file..."
-    curl -sSL -o "$INSTALL_DIR/$file" "https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/$file"
-    if [ $? -ne 0 ]; then
-        print_error "Failed to download $file"
-        exit 1
-    fi
+	# Always download from GitHub for consistency
+	for file in "${FILES_TO_DOWNLOAD[@]}"; do
+	    print_info "Downloading $file..."
+	    curl -sSL -o "$INSTALL_DIR/$file" "$GITHUB_RAW/$file"
+	    if [ $? -ne 0 ]; then
+	        print_error "Failed to download $file"
+	        exit 1
+	    fi
     chmod +x "$INSTALL_DIR/$file"
 done
 
