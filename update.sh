@@ -127,7 +127,7 @@ cd "$INSTALL_DIR"
 if ! command -v uv &> /dev/null; then
     print_info "Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    source "$HOME/.cargo/env"
+    source "$HOME_DIR/.cargo/env"
 fi
 
 # Create/update venv if needed
