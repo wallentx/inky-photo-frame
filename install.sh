@@ -182,7 +182,7 @@ print_info "STEP 7: Setting up Python virtual environment with uv..."
 if ! command -v uv &> /dev/null; then
     print_info "Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    source "$HOME/.cargo/env"
+    source "$HOME_DIR/.cargo/env"
 else
     print_info "uv already installed"
 fi
