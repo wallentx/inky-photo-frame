@@ -1085,6 +1085,12 @@ class InkyPhotoFrame:
 
         observer.join()
 
-if __name__ == '__main__':
+
+def main():
+    """Main entry point for the inky-photo-frame executable."""
     frame = InkyPhotoFrame()
     frame.run()
+
+
+if __name__ == '__main__':
+    main()
