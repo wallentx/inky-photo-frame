@@ -36,7 +36,7 @@ inky-photo-frame/
 ├── uninstall.sh            # Automated uninstaller
 ├── update.sh               # Update script
 ├── diagnostic_report.sh    # Diagnostic and troubleshooting tool
-├── requirements.txt        # Python dependencies
+├── pyproject.toml          # Python dependencies and project metadata
 ├── logrotate.conf         # Log rotation configuration
 ├── README.md              # User documentation
 ├── INSTALLATION_GUIDE.md  # Detailed installation guide
@@ -206,7 +206,7 @@ The application uses JSON files in `$HOME/`:
 
 ## Dependencies & Version Management
 
-- Pin major versions in `requirements.txt` (e.g., `>=1.5.0`)
+- Pin major versions in `pyproject.toml` (e.g., `>=1.5.0`)
 - Test compatibility with Raspberry Pi OS Bookworm (current)
 - Support both legacy and modern GPIO libraries
 - Document any system-level dependencies (I2C, SPI)
