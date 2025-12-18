@@ -188,7 +188,7 @@ PHOTOS_DIR = Path.home() / "Images"  # Photo storage location
 
 **Choose the best color rendering for your photos!**
 
-Edit `$HOME/inky-photo-frame/inky_photo_frame.py` and change `COLOR_MODE` (line 44):
+Edit `$HOME/inky-photo-frame/inky_photo_frame.py` and change `COLOR_MODE`:
 
 #### **Mode 1: `spectra_palette`** ⭐ RECOMMENDED for Spectra 6
 ```python
