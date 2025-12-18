@@ -222,7 +222,7 @@ COLOR_MODE = 'pimoroni'
 # 1. Edit the file
 nano "$HOME/inky-photo-frame/inky_photo_frame.py"
 
-# 2. Change COLOR_MODE on line 44
+# 2. Change the COLOR_MODE value in the configuration constants near the top of the file
 
 # 3. Restart the service
 sudo systemctl restart inky-photo-frame
