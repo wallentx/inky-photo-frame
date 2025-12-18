@@ -124,21 +124,39 @@ print_info "Installing Python dependencies with uv..."
 cd "$INSTALL_DIR"
 
 # Install uv if not present
-if ! command -v uv &> /dev/null; then
+UV_CMD=""
+if command -v uv &> /dev/null; then
+    UV_CMD="uv"
+else
     print_info "Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    source "$HOME_DIR/.cargo/env"
+    # Try to load cargo environment if it exists
+    if [ -f "$HOME/.cargo/env" ]; then
+        # shellcheck source=/dev/null
+        source "$HOME/.cargo/env"
+    fi
+    # Prefer CARGO_HOME if set, otherwise fall back to default cargo path
+    if [ -n "$CARGO_HOME" ] && [ -x "$CARGO_HOME/bin/uv" ]; then
+        UV_CMD="$CARGO_HOME/bin/uv"
+    elif [ -x "$HOME/.cargo/bin/uv" ]; then
+        UV_CMD="$HOME/.cargo/bin/uv"
+    fi
+fi
+
+if [ -z "$UV_CMD" ]; then
+    print_error "uv is not available on PATH and could not be found after installation"
+    exit 1
 fi
 
 # Create/update venv if needed
 if [ ! -d ".venv" ]; then
-    uv venv .venv
+    "$UV_CMD" venv .venv
 fi
 source .venv/bin/activate
 
 # Install dependencies
 print_info "Updating project dependencies..."
-uv pip install --upgrade .
+"$UV_CMD" pip install --upgrade .
 if [ $? -eq 0 ]; then
     print_status "Dependencies updated successfully"
 else
