@@ -162,16 +162,16 @@ FILES_TO_DOWNLOAD=(
     "pyproject.toml"
 )
 
-    # Always download from GitHub for consistency
-    for file in "${FILES_TO_DOWNLOAD[@]}"; do
-        print_info "Downloading $file..."
-        curl -sSL -o "$INSTALL_DIR/$file" "$GITHUB_RAW/$file"
-        if [ $? -ne 0 ]; then
-            print_error "Failed to download $file"
-            exit 1
-        fi
-        chmod +x "$INSTALL_DIR/$file"
-    done
+# Always download from GitHub for consistency
+for file in "${FILES_TO_DOWNLOAD[@]}"; do
+    print_info "Downloading $file..."
+    curl -sSL -o "$INSTALL_DIR/$file" "$GITHUB_RAW/$file"
+    if [ $? -ne 0 ]; then
+        print_error "Failed to download $file"
+        exit 1
+    fi
+    chmod +x "$INSTALL_DIR/$file"
+done
 
 print_status "Application files downloaded successfully"
 
