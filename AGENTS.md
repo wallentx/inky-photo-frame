@@ -251,11 +251,11 @@ When making changes:
 5. **Document hardware requirements** for new features
 6. **Consider Pi Zero performance** (slowest supported device)
 
-## Version Information
+## File location notice
 
-Current version: 1.1.7
+This file is deprecated and kept only for backward compatibility with older tooling.
 
-Version numbering follows semantic versioning:
-- MAJOR: Breaking changes or major features
-- MINOR: New features, backward compatible
-- PATCH: Bug fixes, minor improvements
+The canonical GitHub Copilot instructions for this project are located at:
+`.github/copilot-instructions.md`.
+
+Please update any references or documentation to point to the new path.
