@@ -9,7 +9,7 @@ authors = [
     { name = "Mehdi" }
 ]
 dependencies = [
-    "inky[rpi,example-depends]>=1.5.0",
+    "inky>=1.5.0",
     "Pillow>=10.0.0",
     "pillow-heif>=0.13.0",
     "watchdog>=3.0.0",
@@ -19,6 +19,9 @@ dependencies = [
     "numpy>=1.24.0",
     "requests>=2.31.0",
 ]
+
+[project.scripts]
+inky-photo-frame = "inky_photo_frame:main"
 
 [build-system]
 requires = ["hatchling"]
