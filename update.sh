@@ -130,16 +130,16 @@ if command -v uv &> /dev/null; then
 else
     print_info "Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    # Try to load cargo environment if it exists
-    if [ -f "$HOME/.cargo/env" ]; then
+    # Try to load cargo environment from the target user's home if it exists
+    if [ -f "$HOME_DIR/.cargo/env" ]; then
         # shellcheck source=/dev/null
-        source "$HOME/.cargo/env"
+        source "$HOME_DIR/.cargo/env"
     fi
-    # Prefer CARGO_HOME if set, otherwise fall back to default cargo path
+    # Prefer CARGO_HOME if set, otherwise fall back to default cargo path under the target user's home
     if [ -n "$CARGO_HOME" ] && [ -x "$CARGO_HOME/bin/uv" ]; then
         UV_CMD="$CARGO_HOME/bin/uv"
-    elif [ -x "$HOME/.cargo/bin/uv" ]; then
-        UV_CMD="$HOME/.cargo/bin/uv"
+    elif [ -x "$HOME_DIR/.cargo/bin/uv" ]; then
+        UV_CMD="$HOME_DIR/.cargo/bin/uv"
     fi
 fi
 
