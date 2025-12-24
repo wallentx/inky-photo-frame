@@ -150,8 +150,19 @@ fi
 
 # Create/update venv if needed
 if [ ! -d ".venv" ]; then
-    "$UV_CMD" venv .venv
+    print_info "Creating Python virtual environment..."
+    if ! "$UV_CMD" venv .venv; then
+        print_error "Failed to create Python virtual environment with uv"
+        exit 1
+    fi
 fi
+
+if [ ! -f ".venv/bin/activate" ]; then
+    print_error "Virtual environment activation script not found at .venv/bin/activate"
+    exit 1
+fi
+
+# shellcheck source=/dev/null
 
 # Verify venv Python exists to avoid installing into the wrong environment
 if [ ! -x ".venv/bin/python" ]; then
