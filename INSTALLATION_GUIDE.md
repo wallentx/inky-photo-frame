@@ -6,7 +6,6 @@
 - **Carte SD** (8GB minimum) avec Raspberry Pi OS installé
 - **Écran Inky Impression 7.3"** (800x480 pixels)
 - **Connexion WiFi** configurée sur le Pi
-- **Smartphone** (iPhone, Android, etc.) pour uploader les photos
 
 ## 🚀 Installation Rapide (5 minutes)
 
@@ -14,17 +13,17 @@
 
 ```bash
 # Connectez-vous en SSH à votre Raspberry Pi
-ssh pi@[ip-de-votre-pi]
+ssh <utilisateur>@[ip-de-votre-pi]
 
 # Téléchargez et lancez l'installateur
-curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/wallentx/inky-photo-frame/main/install.sh | bash
 ```
 
 ### Méthode 2 : Installation manuelle
 
 ```bash
 # 1. Clonez le dépôt
-git clone https://github.com/mehdi7129/inky-photo-frame.git
+git clone https://github.com/wallentx/inky-photo-frame.git
 cd inky-photo-frame
 
 # 2. Lancez l'installation
@@ -34,32 +33,17 @@ chmod +x install.sh
 
 L'installation va :
 - ✅ Installer toutes les dépendances
-- ✅ Configurer le partage SMB
-- ✅ Créer l'utilisateur `inky` avec mot de passe `inkyimpression73_2025`
 - ✅ Démarrer automatiquement au boot
 
-## 📱 Configuration depuis votre téléphone
+## 📸 Synchronisation des photos
 
-### 1. Premier démarrage
-Après l'installation, l'écran affiche les instructions de connexion avec :
-- L'adresse IP du Raspberry Pi
-- Les identifiants de connexion
-- Les étapes pour ajouter des photos
+Après l'installation, synchronisez/copiez vos photos dans :
 
-### 2. Ajouter des photos
+- `$HOME/Images`
 
-#### Depuis iPhone/iPad :
-1. Ouvrez l'app **Fichiers** (Files)
-2. Appuyez sur les **3 points** (...) en haut
-3. Sélectionnez **Se connecter au serveur**
-4. Entrez : `smb://[IP-du-raspberry]` (affiché sur l'écran)
-5. Connexion :
-   - **Nom d'utilisateur :** `inky`
-   - **Mot de passe :** `inkyimpression73_2025`
-6. Ouvrez le dossier **InkyPhotos**
-7. **Glissez vos photos** depuis votre galerie
+Les nouvelles photos sont détectées automatiquement et s'affichent sans redémarrer le service.
 
-**💡 La nouvelle photo s'affiche instantanément sur l'écran !**
+Au premier démarrage, l'écran affiche l'adresse IP et le dossier des photos.
 
 ## 🎨 Fonctionnement
 
@@ -100,7 +84,7 @@ L'Inky Impression dispose de **4 boutons physiques** sur le côté pour un contr
 - ✅ Aucun message affiché - actions silencieuses
 - ✅ Boutons verrouillés pendant l'affichage (~30-40s)
 - ✅ Préférence de couleur sauvegardée et persistante
-- ✅ Navigation sans smartphone
+- ✅ Navigation sans interface externe
 
 ## 🛠 Commandes Utiles
 
@@ -129,15 +113,10 @@ sudo systemctl status inky-photo-frame
 # Pin 1 (3.3V), Pin 6 (GND), pins SPI activés
 ```
 
-### Impossible de se connecter en SMB
-1. Vérifiez que le Pi et l'iPhone sont sur le même réseau WiFi
-2. Vérifiez l'IP : `hostname -I`
-3. Redémarrez SMB : `sudo systemctl restart smbd`
-
 ### Les photos ne s'affichent pas
 1. Vérifiez le format (JPG, PNG, HEIC)
-2. Vérifiez les logs : `tail -f /home/pi/inky_photo_frame.log`
-3. Vérifiez les permissions : `ls -la /home/pi/InkyPhotos`
+2. Vérifiez les logs : `tail -f "$HOME/inky_photo_frame.log"`
+3. Vérifiez les permissions : `ls -la "$HOME/Images"`
 
 ## 🗑 Désinstallation
 
@@ -149,17 +128,17 @@ cd inky-photo-frame
 
 ## 📝 Configuration Avancée
 
-Éditez `/home/pi/inky-photo-frame/inky_photo_frame.py` :
+Éditez `$HOME/inky-photo-frame/inky_photo_frame.py` :
 
 ```python
 CHANGE_HOUR = 5  # Heure de changement quotidien (0-23)
-PHOTOS_DIR = Path('/home/pi/InkyPhotos')  # Dossier des photos
+PHOTOS_DIR = Path.home() / "Images"  # Dossier des photos
 ```
 
 ## 🆘 Support
 
-- **GitHub Issues :** [github.com/mehdi7129/inky-photo-frame/issues](https://github.com/mehdi7129/inky-photo-frame/issues)
-- **Documentation :** [github.com/mehdi7129/inky-photo-frame](https://github.com/mehdi7129/inky-photo-frame)
+- **GitHub Issues :** [github.com/wallentx/inky-photo-frame/issues](https://github.com/wallentx/inky-photo-frame/issues)
+- **Documentation :** [github.com/wallentx/inky-photo-frame](https://github.com/wallentx/inky-photo-frame)
 
 ## 💡 Astuces
 

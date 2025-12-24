@@ -5,9 +5,21 @@
 
 set -e
 
-INSTALL_DIR="/home/pi/inky-photo-frame"
-BACKUP_DIR="/home/pi/.inky-backups"
-GITHUB_RAW="https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main"
+TARGET_USER="${SUDO_USER:-$USER}"
+TARGET_GROUP="$(id -gn "$TARGET_USER" 2>/dev/null || echo "$TARGET_USER")"
+HOME_DIR="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+if [ -z "$HOME_DIR" ]; then
+    HOME_DIR="/home/$TARGET_USER"
+fi
+
+INSTALL_DIR="$HOME_DIR/inky-photo-frame"
+BACKUP_DIR="$HOME_DIR/.inky-backups"
+
+# GitHub source (override via env vars when running the updater)
+GITHUB_USER="${GITHUB_USER:-wallentx}"
+GITHUB_REPO="${GITHUB_REPO:-inky-photo-frame}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
+GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH"
 
 # Colors
 GREEN='\033[0;32m'
@@ -36,7 +48,7 @@ echo ""
 if [ ! -d "$INSTALL_DIR" ]; then
     print_error "Installation directory not found: $INSTALL_DIR"
     echo "Please run the installer first:"
-    echo "  curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/install.sh | bash"
+    echo "  curl -sSL $GITHUB_RAW/install.sh | bash"
     exit 1
 fi
 
@@ -70,6 +82,7 @@ FILES_TO_UPDATE=(
     "update.sh"
     "inky-photo-frame-cli"
     "logrotate.conf"
+    "pyproject.toml"
 )
 
 for file in "${FILES_TO_UPDATE[@]}"; do
@@ -107,19 +120,63 @@ else
 fi
 
 # Install/update Python dependencies
-print_info "Installing Python dependencies..."
-if source ~/.virtualenvs/pimoroni/bin/activate 2>/dev/null; then
-    # Install lgpio first (modern GPIO backend for gpiozero)
-    pip install --upgrade lgpio --quiet
-    # Then install other dependencies
-    pip install --upgrade RPi.GPIO gpiozero pillow-heif watchdog --quiet
-    if [ $? -eq 0 ]; then
-        print_status "Dependencies updated (lgpio, RPi.GPIO, gpiozero, pillow-heif, watchdog)"
-    else
-        print_error "Failed to install dependencies"
-    fi
+print_info "Installing Python dependencies with uv..."
+cd "$INSTALL_DIR"
+
+# Install uv if not present
+UV_CMD=""
+if command -v uv &> /dev/null; then
+    UV_CMD="uv"
 else
-    print_error "Could not activate pimoroni virtualenv"
+    print_info "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # Try to load cargo environment from the target user's home if it exists
+    if [ -f "$HOME_DIR/.cargo/env" ]; then
+        # shellcheck source=/dev/null
+        source "$HOME_DIR/.cargo/env"
+    fi
+    # Prefer CARGO_HOME if set, otherwise fall back to default cargo path under the target user's home
+    if [ -n "$CARGO_HOME" ] && [ -x "$CARGO_HOME/bin/uv" ]; then
+        UV_CMD="$CARGO_HOME/bin/uv"
+    elif [ -x "$HOME_DIR/.cargo/bin/uv" ]; then
+        UV_CMD="$HOME_DIR/.cargo/bin/uv"
+    fi
+fi
+
+if [ -z "$UV_CMD" ]; then
+    print_error "uv is not available on PATH and could not be found after installation"
+    exit 1
+fi
+
+# Create/update venv if needed
+if [ ! -d ".venv" ]; then
+    print_info "Creating Python virtual environment..."
+    if ! "$UV_CMD" venv .venv; then
+        print_error "Failed to create Python virtual environment with uv"
+        exit 1
+    fi
+fi
+
+if [ ! -f ".venv/bin/activate" ]; then
+    print_error "Virtual environment activation script not found at .venv/bin/activate"
+    exit 1
+fi
+
+# shellcheck source=/dev/null
+
+# Verify venv Python exists to avoid installing into the wrong environment
+if [ ! -x ".venv/bin/python" ]; then
+    print_error "Virtual environment is missing or incomplete (.venv/bin/python not found)"
+    exit 1
+fi
+
+# Install dependencies
+print_info "Updating project dependencies..."
+"$UV_CMD" pip install --upgrade --python ".venv/bin/python" .
+if [ $? -eq 0 ]; then
+    print_status "Dependencies updated successfully"
+else
+    print_error "Failed to install dependencies"
 fi
 
 # Ensure user is in gpio group (required for GPIO access)
@@ -163,7 +220,11 @@ fi
 # Install logrotate config
 if [ -f "$INSTALL_DIR/logrotate.conf" ]; then
     print_info "Installing logrotate configuration..."
-    sudo cp "$INSTALL_DIR/logrotate.conf" /etc/logrotate.d/inky-photo-frame
+    sudo sed \
+        -e "s|__LOG_FILE__|$HOME_DIR/inky_photo_frame.log|g" \
+        -e "s|__USER__|$TARGET_USER|g" \
+        -e "s|__GROUP__|$TARGET_GROUP|g" \
+        "$INSTALL_DIR/logrotate.conf" | sudo tee /etc/logrotate.d/inky-photo-frame > /dev/null
     sudo chown root:root /etc/logrotate.d/inky-photo-frame
     sudo chmod 644 /etc/logrotate.d/inky-photo-frame
 fi

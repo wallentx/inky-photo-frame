@@ -15,13 +15,21 @@ echo "   These are REQUIRED for the Inky display to work properly"
 echo ""
 
 # Variables
-USER_NAME="inky"
-# Generate a random 10-character password (alphanumeric only for compatibility)
-USER_PASSWORD=$(< /dev/urandom tr -dc 'A-Za-z0-9' | head -c 10)
-SMB_SHARE_NAME="Images"
-PHOTOS_DIR="/home/pi/Images"
-INSTALL_DIR="/home/pi/inky-photo-frame"
-PASSWORD_FILE="/home/pi/.inky_credentials"
+TARGET_USER="${SUDO_USER:-$USER}"
+TARGET_GROUP="$(id -gn "$TARGET_USER" 2>/dev/null || echo "$TARGET_USER")"
+HOME_DIR="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+if [ -z "$HOME_DIR" ]; then
+    HOME_DIR="/home/$TARGET_USER"
+fi
+
+PHOTOS_DIR="$HOME_DIR/Images"
+INSTALL_DIR="$HOME_DIR/inky-photo-frame"
+
+# GitHub source (override via env vars when running the installer)
+GITHUB_USER="${GITHUB_USER:-wallentx}"
+GITHUB_REPO="${GITHUB_REPO:-inky-photo-frame}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
+GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH"
 
 # Colors for output
 RED='\033[0;31m'
@@ -130,34 +138,20 @@ sudo apt-get update
 
 # STEP 4: Install required system packages
 print_info "STEP 4: Installing required packages..."
-sudo apt-get install -y python3-pip python3-venv samba samba-common-bin git hostapd dnsmasq fonts-dejavu fonts-dejavu-core swig python3-dev liblgpio-dev
+sudo apt-get install -y python3-pip python3-venv git hostapd dnsmasq fonts-dejavu fonts-dejavu-core swig python3-dev liblgpio-dev
 
 # STEP 5: Create photos directory
 print_info "STEP 5: Creating photos directory..."
-mkdir -p $PHOTOS_DIR
-sudo chown pi:pi $PHOTOS_DIR
-chmod 755 $PHOTOS_DIR
+sudo mkdir -p "$PHOTOS_DIR"
+sudo chown "$TARGET_USER:$TARGET_GROUP" "$PHOTOS_DIR"
+sudo chmod 755 "$PHOTOS_DIR"
 
-# STEP 6: Setup Python virtual environment
-print_info "STEP 6: Setting up Python virtual environment..."
-python3 -m venv ~/.virtualenvs/pimoroni
-source ~/.virtualenvs/pimoroni/bin/activate
+# STEP 6: Prepare application files
+print_info "STEP 6: Preparing application files..."
+sudo mkdir -p "$INSTALL_DIR"
+sudo chown -R "$TARGET_USER:$TARGET_GROUP" "$INSTALL_DIR"
 
-# STEP 7: Install Inky library
-print_info "STEP 7: Installing Inky library..."
-pip install --upgrade pip
-pip install inky[rpi,example-depends]
-
-# STEP 8: Install additional Python packages
-print_info "STEP 8: Installing Python dependencies..."
-pip install pillow pillow-heif watchdog lgpio RPi.GPIO gpiozero
-
-# STEP 9: Create installation directory
-print_info "STEP 9: Creating application directory..."
-mkdir -p $INSTALL_DIR
-
-# STEP 10: Download application files from GitHub
-print_info "STEP 10: Downloading application files from GitHub..."
+print_info "Downloading application files from GitHub..."
 
 # List of files to download
 FILES_TO_DOWNLOAD=(
@@ -165,81 +159,55 @@ FILES_TO_DOWNLOAD=(
     "update.sh"
     "inky-photo-frame-cli"
     "logrotate.conf"
+    "pyproject.toml"
 )
 
 # Always download from GitHub for consistency
 for file in "${FILES_TO_DOWNLOAD[@]}"; do
     print_info "Downloading $file..."
-    curl -sSL -o $INSTALL_DIR/$file https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/$file
+    curl -sSL -o "$INSTALL_DIR/$file" "$GITHUB_RAW/$file"
     if [ $? -ne 0 ]; then
         print_error "Failed to download $file"
         exit 1
     fi
-    chmod +x $INSTALL_DIR/$file
+    chmod +x "$INSTALL_DIR/$file"
 done
 
 print_status "Application files downloaded successfully"
 
-# STEP 11: Configure Samba
-print_info "STEP 11: Configuring SMB file sharing..."
+# STEP 7: Setup Python virtual environment with uv
+print_info "STEP 7: Setting up Python virtual environment with uv..."
 
-# Backup existing smb.conf
-sudo cp /etc/samba/smb.conf /etc/samba/smb.conf.backup
-
-# Add SMB share configuration
-sudo tee -a /etc/samba/smb.conf > /dev/null << EOF
-
-[$SMB_SHARE_NAME]
-   comment = Photo Frame Images
-   path = $PHOTOS_DIR
-   browseable = yes
-   read only = no
-   create mask = 0755
-   directory mask = 0755
-   valid users = $USER_NAME, pi
-   write list = $USER_NAME, pi
-   force user = pi
-   force group = pi
-
-   # iOS compatibility settings
-   vfs objects = fruit streams_xattr
-   fruit:metadata = stream
-   fruit:model = MacSamba
-   fruit:veto_appledouble = no
-   fruit:posix_rename = yes
-   fruit:zero_file_id = yes
-   fruit:wipe_intentionally_left_blank_rfork = yes
-   fruit:delete_empty_adfiles = yes
-EOF
-
-# STEP 12: Create SMB user
-print_info "STEP 12: Creating SMB user '$USER_NAME'..."
-# Check if user exists
-if id "$USER_NAME" &>/dev/null; then
-    print_info "User $USER_NAME already exists"
+# Install uv if not present
+if ! command -v uv &> /dev/null; then
+    print_info "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    source "$HOME_DIR/.cargo/env"
 else
-    sudo useradd -m $USER_NAME
+    print_info "uv already installed"
 fi
 
-# Set SMB password
-echo -e "$USER_PASSWORD\n$USER_PASSWORD" | sudo smbpasswd -a $USER_NAME -s
-sudo smbpasswd -e $USER_NAME
+# Create venv in the install directory
+cd "$INSTALL_DIR"
+print_info "Creating virtual environment..."
+if ! uv venv .venv; then
+    echo "❌ Failed to create Python virtual environment with uv. Aborting." >&2
+    exit 1
+fi
 
-# Also set pi user for SMB
-echo -e "$USER_PASSWORD\n$USER_PASSWORD" | sudo smbpasswd -a pi -s
-sudo smbpasswd -e pi
+if [ ! -f ".venv/bin/activate" ]; then
+    echo "❌ Virtual environment activation script '.venv/bin/activate' not found. Aborting." >&2
+    exit 1
+fi
 
-# Save credentials to file for display on Inky screen
-print_info "Saving credentials..."
-echo "$USER_NAME" | sudo tee "$PASSWORD_FILE" > /dev/null
-echo "$USER_PASSWORD" | sudo tee -a "$PASSWORD_FILE" > /dev/null
-sudo chmod 644 "$PASSWORD_FILE"
-print_status "Credentials saved to $PASSWORD_FILE"
+# Activate the virtual environment
+# shellcheck disable=SC1091
+source .venv/bin/activate
 
-# Restart Samba
-print_info "Restarting SMB service..."
-sudo systemctl restart smbd
-sudo systemctl enable smbd
+# STEP 8: Install dependencies
+print_info "STEP 8: Installing project dependencies..."
+uv pip install .
+print_status "Dependencies installed successfully"
 
 # STEP 13: Create systemd service
 print_info "STEP 13: Creating system service for automatic startup..."
@@ -250,10 +218,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=pi
+User=$TARGET_USER
 WorkingDirectory=$INSTALL_DIR
-Environment="PATH=/home/pi/.virtualenvs/pimoroni/bin:/usr/bin:/bin"
-ExecStart=/home/pi/.virtualenvs/pimoroni/bin/python $INSTALL_DIR/inky_photo_frame.py
+Environment="PATH=$INSTALL_DIR/.venv/bin:/usr/bin:/bin"
+ExecStart=$INSTALL_DIR/.venv/bin/python $INSTALL_DIR/inky_photo_frame.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -265,7 +233,11 @@ EOF
 
 # STEP 14: Install logrotate configuration
 print_info "STEP 14: Installing log rotation..."
-sudo cp $INSTALL_DIR/logrotate.conf /etc/logrotate.d/inky-photo-frame
+sudo sed \
+    -e "s|__LOG_FILE__|$HOME_DIR/inky_photo_frame.log|g" \
+    -e "s|__USER__|$TARGET_USER|g" \
+    -e "s|__GROUP__|$TARGET_GROUP|g" \
+    "$INSTALL_DIR/logrotate.conf" | sudo tee /etc/logrotate.d/inky-photo-frame > /dev/null
 sudo chown root:root /etc/logrotate.d/inky-photo-frame
 sudo chmod 644 /etc/logrotate.d/inky-photo-frame
 print_status "Log rotation configured (7 days retention)"
@@ -296,24 +268,13 @@ IP_ADDRESS=$(hostname -I | cut -d' ' -f1)
 cat > $INSTALL_DIR/README.md << EOF
 # Inky Photo Frame
 
-## 📱 How to Add Photos from Your Phone
+## 📸 Adding Photos
 
-### iPhone/iPad
-1. Open the **Files** app
-2. Tap **Connect to Server**
-3. Enter: \`smb://$IP_ADDRESS\`
-4. Use these credentials:
-   - **Username:** $USER_NAME
-   - **Password:** $USER_PASSWORD
-5. Open the **Images** folder
-6. Upload your photos (JPG, PNG, HEIC supported)
+Sync or copy photos into:
 
-### Android
-1. Use a file explorer app (CX File Explorer, Solid Explorer)
-2. Connect to: \`smb://$IP_ADDRESS\`
-3. Enter the same credentials as above
-4. Navigate to **Images** folder
-5. Upload your photos
+- $PHOTOS_DIR
+
+New photos will be detected and displayed automatically.
 
 ## ✨ Features
 
@@ -343,8 +304,8 @@ sudo systemctl stop inky-photo-frame
 
 - Photos: $PHOTOS_DIR
 - Application: $INSTALL_DIR
-- Logs: /home/pi/inky_photo_frame.log
-- History: /home/pi/.inky_history.json
+- Logs: $HOME_DIR/inky_photo_frame.log
+- History: $HOME_DIR/.inky_history.json
 EOF
 
 # Final status check only if services were started
@@ -359,14 +320,9 @@ echo "╔═══════════════════════�
 echo "║     ✅ Installation completed successfully!            ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
-echo "📱 HOW TO CONNECT FROM YOUR PHONE:"
-echo "   iPhone/iPad: Open Files app"
-echo "   Android: Use a file explorer (CX File Explorer, Solid Explorer)"
-echo ""
-echo "   For all devices:"
-echo "   1. Connect to: smb://$IP_ADDRESS"
-echo "   2. Username: $USER_NAME"
-echo "   3. Password: $USER_PASSWORD"
+echo "📸 PHOTO DIRECTORY:"
+echo "   $PHOTOS_DIR"
+echo "   Sync/copy images here to update the display."
 echo ""
 if [ "$REBOOT_REQUIRED" = true ]; then
     echo "📷 After reboot, the welcome screen will appear on your Inky display"
@@ -396,7 +352,7 @@ if [ "$REBOOT_REQUIRED" = true ]; then
     echo ""
     echo "After reboot:"
     echo "1. The welcome screen will appear on your Inky display"
-    echo "2. You can connect from your phone to add photos"
+    echo "2. Sync/copy photos into: $PHOTOS_DIR"
     echo ""
     echo "Please reboot now:"
     echo ""

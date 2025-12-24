@@ -71,7 +71,7 @@ inky-photo-frame info
 # - Status du service
 # - Nombre de photos
 # - Espace disque
-# - Adresse IP/SMB
+# - Adresse IP
 ```
 
 ---
@@ -97,7 +97,7 @@ INKY_V2/
 ```bash
 # 1. Télécharger les nouveaux fichiers
 cd ~/inky-photo-frame
-curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/update.sh -o update.sh
+curl -sSL https://raw.githubusercontent.com/wallentx/inky-photo-frame/main/update.sh -o update.sh
 chmod +x update.sh
 
 # 2. Mettre à jour
@@ -107,7 +107,7 @@ chmod +x update.sh
 ### Sur une Nouvelle Installation
 ```bash
 # L'installation normale inclut déjà tout
-curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/wallentx/inky-photo-frame/main/install.sh | bash
 ```
 
 ---

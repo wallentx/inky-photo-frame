@@ -12,6 +12,16 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+TARGET_USER="${SUDO_USER:-$USER}"
+HOME_DIR="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+if [ -z "$HOME_DIR" ]; then
+    HOME_DIR="/home/$TARGET_USER"
+fi
+PHOTOS_DIR="$HOME_DIR/Images"
+INSTALL_DIR="$HOME_DIR/inky-photo-frame"
+HISTORY_FILE="$HOME_DIR/.inky_history.json"
+LOG_FILE="$HOME_DIR/inky_photo_frame.log"
+
 print_status() {
     echo -e "${GREEN}✅ $1${NC}"
 }
@@ -22,7 +32,7 @@ print_info() {
 
 # Confirmation
 echo -e "${YELLOW}⚠️  Cette action va désinstaller Inky Photo Frame${NC}"
-echo "Les photos dans /home/pi/InkyPhotos seront conservées"
+echo "Les photos dans $PHOTOS_DIR seront conservées"
 read -p "Voulez-vous continuer? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -37,40 +47,24 @@ sudo systemctl disable inky-photo-frame
 sudo rm /etc/systemd/system/inky-photo-frame.service
 sudo systemctl daemon-reload
 
-# Remove SMB share
-print_info "Suppression du partage SMB..."
-sudo cp /etc/samba/smb.conf /etc/samba/smb.conf.uninstall-backup
-sudo sed -i '/\[InkyPhotos\]/,/^$/d' /etc/samba/smb.conf
-sudo systemctl restart smbd
-
 # Remove application files
 print_info "Suppression des fichiers de l'application..."
-rm -rf /home/pi/inky-photo-frame
+rm -rf "$INSTALL_DIR"
 
 # Keep photos and history
 print_info "Conservation des photos et de l'historique..."
-
-# Optional: Remove user
-echo ""
-read -p "Voulez-vous supprimer l'utilisateur 'inky'? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    sudo smbpasswd -x inky
-    sudo userdel inky
-    print_status "Utilisateur inky supprimé"
-fi
 
 # Optional: Remove photos
 echo ""
 read -p "Voulez-vous supprimer les photos? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    rm -rf /home/pi/InkyPhotos
-    rm -f /home/pi/.inky_history.json
-    rm -f /home/pi/inky_photo_frame.log
+    rm -rf "$PHOTOS_DIR"
+    rm -f "$HISTORY_FILE"
+    rm -f "$LOG_FILE"
     print_status "Photos et historique supprimés"
 else
-    print_info "Photos conservées dans /home/pi/InkyPhotos"
+    print_info "Photos conservées dans $PHOTOS_DIR"
 fi
 
 echo ""

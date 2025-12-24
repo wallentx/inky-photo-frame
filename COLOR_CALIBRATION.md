@@ -16,7 +16,7 @@ If your photos appear with a yellow/green tint on the e-ink display, this is usu
 
 ### Manual Adjustments
 
-Edit `/home/pi/inky-photo-frame/inky_photo_frame.py` (lines 40-43):
+Edit `$HOME/inky-photo-frame/inky_photo_frame.py`:
 
 ```python
 # Color calibration settings for e-ink display

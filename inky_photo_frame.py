@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Inky Photo Frame - Digital photo frame for Inky Impression 7.3"
-Displays photos from SMB share with immediate display of new photos
+Displays photos from a local directory with immediate updates
 Changes daily at 5AM with intelligent rotation
 
 Version: 1.1.7
@@ -56,11 +56,12 @@ except ImportError:
     BUTTONS_AVAILABLE = False
 
 # Configuration
-PHOTOS_DIR = Path('/home/pi/Images')
-HISTORY_FILE = Path('/home/pi/.inky_history.json')
-COLOR_MODE_FILE = Path('/home/pi/.inky_color_mode.json')
+HOME_DIR = Path(os.environ.get("HOME", f"/home/{os.environ.get('USER', 'pi')}"))
+PHOTOS_DIR = HOME_DIR / "Images"
+HISTORY_FILE = HOME_DIR / ".inky_history.json"
+COLOR_MODE_FILE = HOME_DIR / ".inky_color_mode.json"
 CHANGE_HOUR = 5  # Daily change hour (5AM)
-LOG_FILE = '/home/pi/inky_photo_frame.log'
+LOG_FILE = str(HOME_DIR / "inky_photo_frame.log")
 MAX_PHOTOS = 1000  # Maximum number of photos to keep (auto-delete oldest)
 VERSION = "1.1.7"
 
@@ -422,21 +423,8 @@ class InkyPhotoFrame:
         except:
             return "192.168.1.xxx"
 
-    def get_credentials(self):
-        """Read username and password from credentials file"""
-        try:
-            cred_file = Path("/home/pi/.inky_credentials")
-            if cred_file.exists():
-                lines = cred_file.read_text().strip().split('\n')
-                if len(lines) >= 2:
-                    return lines[0], lines[1]  # username, password
-        except Exception as e:
-            logging.warning(f"Could not read credentials file: {e}")
-        # Fallback to default values
-        return "inky", "inkyimpression73_2025"
-
     def display_welcome(self):
-        """Display welcome screen with connection instructions - LARGE readable text"""
+        """Display welcome screen with setup info - LARGE readable text"""
         logging.info('Displaying welcome screen')
 
         # Create welcome image - pure white background
@@ -456,7 +444,7 @@ class InkyPhotoFrame:
             cred_font = title_font
 
         ip_address = self.get_ip_address()
-        username, password = self.get_credentials()
+        photos_dir = str(PHOTOS_DIR)
 
         # Title
         y_pos = 15
@@ -471,37 +459,37 @@ class InkyPhotoFrame:
 
         # IP Address - LARGE and prominent
         y_pos += 20
-        ip_text = f"smb://{ip_address}"
+        ip_text = f"IP: {ip_address}"
         bbox = draw.textbbox((0, 0), ip_text, font=ip_font)
         x = (self.width - (bbox[2] - bbox[0])) // 2
         draw.text((x, y_pos), ip_text, font=ip_font, fill='darkblue')
 
-        # Credentials - LARGE (dynamically read from file)
+        # Photos directory
         y_pos += 95
-        cred_text = f"Username: {username}"
+        cred_text = "Photos directory:"
         bbox = draw.textbbox((0, 0), cred_text, font=cred_font)
         x = (self.width - (bbox[2] - bbox[0])) // 2
         draw.text((x, y_pos), cred_text, font=cred_font, fill='black')
 
         y_pos += 55
-        cred_text = f"Password: {password}"
-        bbox = draw.textbbox((0, 0), cred_text, font=cred_font)
+        dir_text = photos_dir
+        bbox = draw.textbbox((0, 0), dir_text, font=info_font)
         x = (self.width - (bbox[2] - bbox[0])) // 2
-        draw.text((x, y_pos), cred_text, font=cred_font, fill='black')
+        draw.text((x, y_pos), dir_text, font=info_font, fill='black')
 
         # Separator
         y_pos += 60
         draw.line([(80, y_pos), (720, y_pos)], fill='gray', width=2)
 
-        # Instructions - simplified
+        # Instructions
         y_pos += 20
-        text1 = "iPhone: Files app"
+        text1 = "Sync/copy images here"
         bbox = draw.textbbox((0, 0), text1, font=info_font)
         x = (self.width - (bbox[2] - bbox[0])) // 2
         draw.text((x, y_pos), text1, font=info_font, fill='darkgreen')
 
         y_pos += 50
-        text2 = "Android: File Explorer"
+        text2 = "New photos show automatically"
         bbox = draw.textbbox((0, 0), text2, font=info_font)
         x = (self.width - (bbox[2] - bbox[0])) // 2
         draw.text((x, y_pos), text2, font=info_font, fill='darkgreen')
@@ -1097,6 +1085,12 @@ class InkyPhotoFrame:
 
         observer.join()
 
-if __name__ == '__main__':
+
+def main():
+    """Main entry point for the inky-photo-frame executable."""
     frame = InkyPhotoFrame()
     frame.run()
+
+
+if __name__ == '__main__':
+    main()

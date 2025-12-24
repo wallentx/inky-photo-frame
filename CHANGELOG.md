@@ -214,7 +214,7 @@ This fixes the update failure where service wouldn't start if gpiozero wasn't in
 #### Technical Implementation
 - ButtonController class with 20ms debouncing using gpiozero
 - Busy flag lock mechanism prevents button presses during e-ink refresh
-- Color mode persistence via `/home/pi/.inky_color_mode.json`
+- Color mode persistence via `$HOME/.inky_color_mode.json`
 - Silent operation - no messages displayed to user
 - Thread-safe button handling with existing lock system
 
@@ -336,7 +336,7 @@ Retrying in 1s...
 ```bash
 inky-photo-frame update
 # ou
-bash /home/pi/inky-photo-frame/update.sh
+bash "$HOME/inky-photo-frame/update.sh"
 ```
 
 **Processus de mise à jour :**
@@ -374,7 +374,7 @@ Service: Running ✓
 Photos: 245
 Disk Usage: 23%
 IP Address: 192.168.1.42
-SMB Share: smb://192.168.1.42
+Photos Directory: $HOME/Images
 ```
 
 ---
@@ -442,7 +442,7 @@ curl -sSL https://raw.githubusercontent.com/mehdi7129/inky-photo-frame/main/upda
 
 ### Ajuster la Limite de Photos
 
-Éditez `/home/pi/inky-photo-frame/inky_photo_frame.py` :
+Éditez `$HOME/inky-photo-frame/inky_photo_frame.py` :
 
 ```python
 MAX_PHOTOS = 1000  # Changer cette valeur
