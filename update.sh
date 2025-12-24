@@ -152,11 +152,16 @@ fi
 if [ ! -d ".venv" ]; then
     "$UV_CMD" venv .venv
 fi
-source .venv/bin/activate
+
+# Verify venv Python exists to avoid installing into the wrong environment
+if [ ! -x ".venv/bin/python" ]; then
+    print_error "Virtual environment is missing or incomplete (.venv/bin/python not found)"
+    exit 1
+fi
 
 # Install dependencies
 print_info "Updating project dependencies..."
-"$UV_CMD" pip install --upgrade .
+"$UV_CMD" pip install --upgrade --python ".venv/bin/python" .
 if [ $? -eq 0 ]; then
     print_status "Dependencies updated successfully"
 else
