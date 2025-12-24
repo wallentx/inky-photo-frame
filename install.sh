@@ -190,7 +190,18 @@ fi
 # Create venv in the install directory
 cd "$INSTALL_DIR"
 print_info "Creating virtual environment..."
-uv venv .venv
+if ! uv venv .venv; then
+    echo "❌ Failed to create Python virtual environment with uv. Aborting." >&2
+    exit 1
+fi
+
+if [ ! -f ".venv/bin/activate" ]; then
+    echo "❌ Virtual environment activation script '.venv/bin/activate' not found. Aborting." >&2
+    exit 1
+fi
+
+# Activate the virtual environment
+# shellcheck disable=SC1091
 source .venv/bin/activate
 
 # STEP 8: Install dependencies
